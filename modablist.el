@@ -32,6 +32,8 @@
 
 ;;; Code:
 
+(require 'tabulated-list)
+
 (defgroup modablist nil
   "Modifiable tabulated-list extension."
   :prefix "modablist-"
