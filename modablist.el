@@ -50,6 +50,15 @@
   :type 'integer
   :group 'modablist)
 
+(defvar modablist-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "<return>") #'modablist--confirm)
+    map)
+  "Kaymap for `modablist-mode'.")
+
+(defvar modablist--tablist-format (modablist--init-tablist-format)
+  "Format to assign to `tabulated-list-format' variable.")
+
 (defconst modablist--buffer-name-format "*modablist:<%s>*"
   "String format for buffer name.")
 
@@ -119,12 +128,6 @@ This value will be increment by 1 for every new modablist creation.")
   ;;(make-overlay )
   )
 
-(defvar modablist-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "<return>") #'modablist--confirm)
-    map)
-  "Kaymap for `modablist-mode'.")
-
 (defun modablist--new-row ()
   "Generate a new row."
   (let (new-row (cnt 0))
@@ -147,9 +150,6 @@ This value will be increment by 1 for every new modablist creation.")
       (push (list (char-to-string start) modablist-default-width t) lst)
       (setq start (1+ start)))
     (vconcat (reverse lst))))
-
-(defvar modablist--tablist-format (modablist--init-tablist-format)
-  "Format to assign to `tabulated-list-format' variable.")
 
 (define-derived-mode modablist-mode tabulated-list-mode
   "modablist-mode"
