@@ -7,7 +7,7 @@
 ;; Description: Modifiable tabulated-list extension.
 ;; Keyword: table list tablist
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "24.3") (easy-tabulated-list "0.1.0")
 ;; URL: https://github.com/jcs-elpa/modablist
 
 ;; This file is NOT part of GNU Emacs.
@@ -32,7 +32,7 @@
 
 ;;; Code:
 
-(require 'tabulated-list)
+(require 'easy-tabulated-list)
 
 (defgroup modablist nil
   "Modifiable tabulated-list extension."
