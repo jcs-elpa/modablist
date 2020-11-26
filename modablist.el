@@ -83,6 +83,15 @@
   "Timer for selection overlay.")
 
 ;;
+;; (@* "Faces" )
+;;
+
+(defface modablist-select-face
+  '((t :box '(:line-width -1 :color "#787878" :style nil)))
+  "Face when selecting the current box."
+  :group 'modablist)
+
+;;
 ;; (@* "Util" )
 ;;
 
@@ -178,15 +187,16 @@
 
 (defun modablist--make-overlay (beg end)
   "Make selection overlay."
-  (let ((ol (make-overlay beg end)))
-    (overlay-put ol 'face 'ivy-current-match)
-    (overlay-put ol 'priority 100)
-    (push ol modablist--overlays)  ; NOTE: Eventually get managed to list.
-    ol))
+  (when (and (integerp beg) (integerp end))
+    (let ((ol (make-overlay beg end)))
+      (overlay-put ol 'face 'modablist-select-face)
+      (overlay-put ol 'priority 100)
+      (push ol modablist--overlays)  ; NOTE: Eventually get managed to list.
+      ol)))
 
 (defun modablist--make-selection-ov ()
   "Make selection overlay."
-  (modablist-current-buffer modablist--buffer
+  (modablist-current-buffer
     (let ((range (modablist--current-range)))
       (modablist--make-overlay (car range) (cdr range)))))
 
