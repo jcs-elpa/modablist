@@ -7,7 +7,7 @@
 ;; Description: Modifiable tabulated-list extension.
 ;; Keyword: table list tablist
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "24.3") (easy-tabulated-list "0.1.2"))
+;; Package-Requires: ((emacs "24.4") (easy-tabulated-list "0.1.2"))
 ;; URL: https://github.com/jcs-elpa/modablist
 
 ;; This file is NOT part of GNU Emacs.
@@ -32,6 +32,8 @@
 
 ;;; Code:
 
+(require 'subr-x)
+
 (require 'easy-tabulated-list)
 
 (defgroup modablist nil
@@ -47,6 +49,7 @@
 
 (defvar modablist-mode-map
   (let ((map (make-sparse-keymap)))
+    (define-key map [C-mouse-1] #'modablist-continue-select-at-point)
     (define-key map (kbd "<return>") #'modablist--confirm)
     map)
   "Kaymap for function `modablist-mode'.")
@@ -86,17 +89,20 @@ The data is construct by (row . column).")
 (defvar-local modablist--timer-selection-overlay nil
   "Timer for selection overlay.")
 
+(defvar-local modablist--continue-select-p nil
+  "Flag to see if currently continue selecting.")
+
 ;;
 ;; (@* "Faces" )
 ;;
 
 (defface modablist-select-face
-  '((t :box '(:line-width -1 :color "#65a7e2" :style nil)))
+  '((t :box '(:line-width -1 :color "#65A7E2" :style nil)))
   "Face when selecting the current box."
   :group 'modablist)
 
 (defface modablist-insert-face
-  '((t :box '(:line-width -1 :color "red" :style nil)))
+  '((t :inverse-video t))
   "Face when inserting the current box."
   :group 'modablist)
 
@@ -123,7 +129,7 @@ The data is construct by (row . column).")
 
 (defun modablist--inserting-p ()
   "Return non-nil if currently inserting."
-  buffer-read-only)
+  (not buffer-read-only))
 
 (defun modablist--toggle-mode ()
   "Invert the insert flag."
@@ -133,10 +139,14 @@ The data is construct by (row . column).")
 ;; (@* "Table" )
 ;;
 
-(defun modablist--change-data (row column value)
-  ""
-  ;; TODO: ..
-  (setf (nth column (nth row modablist-data)) value))
+(defun modablist--change-data (column value)
+  "Change current table value to VALUE.
+
+Argument COLUMN is use to identify the the order of the table entry.
+
+Notice this function will modified variable `tabulated-list-entries'.
+You will need to call function `tabulated-list-revert' afterward."
+  (when (integerp column) (aset (tabulated-list-get-entry) (1- column) value)))
 
 (defun modablist--count-rows ()
   "Return integer value represent rows."
@@ -159,7 +169,13 @@ The data is construct by (row . column).")
     (1+ (- (line-number-at-pos) first-entry-line))))
 
 (defun modablist--update-column-boundary ()
-  "Update the variable `modablist--column-boundary'."
+  "Update the variable `modablist--column-boundary'.
+
+Notice that you will need to call this if either of these following variables
+have changed.
+
+  - `tabulated-list-padding' - Starting column to print table.
+  - `tabulated-list-format' - Each column's width definition."
   (setq modablist--column-boundary '())
   (let ((boundary tabulated-list-padding))
     (push boundary modablist--column-boundary)
@@ -183,7 +199,10 @@ The data is construct by (row . column).")
     column))
 
 (defun modablist--get-column-boundary (column &optional pos)
-  "Return the column boundary by COLUMN."
+  "Return the column boundary by COLUMN.
+
+If optional argument POS is non-nil then convert the column data into the
+current buffer position data."
   (when (integerp column)
     (let ((lower-column (nth (1- column) modablist--column-boundary))
           (upper-column (nth column modablist--column-boundary)))
@@ -194,27 +213,33 @@ The data is construct by (row . column).")
 (defun modablist--current-range ()
   "Return current column buffer position by (beg . end)."
   (let ((column (modablist--current-column)))
+    (modablist--get-column-boundary column t)
     (modablist--get-column-boundary column t)))
+
+(defun modablist--current-content ()
+  "Return content from box."
+  (let* ((range (modablist--current-range)) (beg (car range)) (end (cdr range)))
+    (when (and (integerp beg) (integerp end))
+      (string-trim (buffer-substring beg end)))))
 
 (defun modablist--move-to (row column)
   "Move cursor to ROW and COLUMN."
-  (forward-line (- row (modablist--current-row)))
-  (move-to-column (car (modablist--get-column-boundary column))))
+  (when row (forward-line (- row (modablist--current-row))))
+  (when column (move-to-column (car (modablist--get-column-boundary column)))))
 
 ;;
 ;; (@* "Selection" )
 ;;
 
 (defun modablist--make-overlay (beg end)
-  "Make selection overlay."
+  "Make selection overlay by BEG and END."
   (when (and (integerp beg) (integerp end))
-    (modablist-current-buffer
-      (let ((ol (make-overlay beg end)))
-        (overlay-put ol 'face (if (modablist--inserting-p) 'modablist-select-face
-                                'modablist-insert-face))
-        (overlay-put ol 'priority 100)
-        (push ol modablist--overlays)  ; NOTE: Eventually get managed to list.
-        ol))))
+    (let ((ol (make-overlay beg end)))
+      (overlay-put ol 'face (if (modablist--inserting-p) 'modablist-insert-face
+                              'modablist-select-face))
+      (overlay-put ol 'priority 100)
+      (push ol modablist--overlays)  ; NOTE: Eventually get managed to list.
+      ol)))
 
 (defun modablist--clear-overlays ()
   "Remove all overlays."
@@ -229,28 +254,40 @@ The data is construct by (row . column).")
 
 (defun modablist--make-selection-ov ()
   "Make selection overlay."
-  (modablist--ensure-current-selection)
-  (save-excursion
-    (dolist (box modablist--selected-box)
-      (modablist--move-to (car box) (cdr box))
-      (let ((range (modablist--current-range)))
-        (modablist--make-overlay (car range) (cdr range))))))
+  (modablist-current-buffer
+    (modablist--ensure-current-selection)
+    (save-excursion
+      (dolist (box modablist--selected-box)
+        (modablist--move-to (car box) (cdr box))
+        (let ((range (modablist--current-range)))
+          (modablist--make-overlay (car range) (cdr range)))))))
+
+(defun modablist-remove-all-selections ()
+  "Remove all selections."
+  (interactive)
+  (setq modablist--selected-box '()))
+
+(defun modablist-continue-select-at-point ()
+  "Make continue select at current box."
+  (interactive)
+  (setq modablist--continue-select-p t)
+  (call-interactively #'mouse-set-point)
+  (modablist--ensure-current-selection))
 
 ;;
 ;; (@* "Core" )
 ;;
 
 (defun modablist--confirm ()
-  ""
+  "Not documented."
   (interactive)
   (unless (tabulated-list-get-entry) (modablist--new-row))
   (modablist--toggle-mode)
   (if (modablist--inserting-p)
-      (progn
-        ()
-        )
-    )
-  (message "read: %s" buffer-read-only))
+      (use-local-map modablist-mode-insert-map)
+    (use-local-map modablist-mode-map)
+    (modablist--change-data (modablist--current-column) (modablist--current-content))
+    (tabulated-list-revert)))
 
 (defun modablist--new-row ()
   "Create a new row."
@@ -261,9 +298,14 @@ The data is construct by (row . column).")
                   (easy-tabulated-list-form-entries new-row)))
     (tabulated-list-revert)))
 
+(defun modablist--pre-command ()
+  "Pre command for function `modablist-mode'."
+  (setq modablist--continue-select-p nil))
+
 (defun modablist--post-command ()
-  "Post command for `modablist-mode'."
+  "Post command for function `modablist-mode'."
   (modablist--clear-overlays)
+  (unless modablist--continue-select-p (modablist-remove-all-selections))
   (modablist--kill-timer modablist--timer-selection-overlay)
   (setq modablist--timer-selection-overlay
         (run-with-timer modablist-highlight-delay nil #'modablist--make-selection-ov)))
@@ -278,12 +320,14 @@ The data is construct by (row . column).")
       (progn
         (modablist--update-column-boundary)
         (setq modablist--buffer (current-buffer))
+        (add-hook 'pre-command-hook #'modablist--pre-command nil t)
         (add-hook 'post-command-hook #'modablist--post-command nil t))
     (modablist-mode -1)
     (user-error "[WARNING] You can't enable modablist in buffer that aren't derived from `tabulated-list-mode`")))
 
 (defun modablist--disable ()
   "Disable `modablist' in current buffer."
+  (remove-hook 'pre-command-hook #'modablist--pre-command t)
   (remove-hook 'post-command-hook #'modablist--post-command t))
 
 ;;;###autoload
