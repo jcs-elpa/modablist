@@ -102,7 +102,8 @@ The data is construct by (row . column).")
   :group 'modablist)
 
 (defface modablist-insert-face
-  '((t :inverse-video t))
+  '((t :background "#565136"
+       :box '(:line-width -1 :color "#65A7E2" :style nil)))
   "Face when inserting the current box."
   :group 'modablist)
 
