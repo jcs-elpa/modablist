@@ -47,6 +47,14 @@
   :type 'float
   :group 'modablist)
 
+(defcustom modablist-new-data-hook nil
+  "Hooks run after new data is inserted to `tabulated-list-entries'.
+
+This variable is use when you want to respect the input from the user and
+change it to the upstream entries variable."
+  :type 'hook
+  :group 'modablist)
+
 (defvar modablist-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map [C-mouse-1] #'modablist-continue-select-at-point)
@@ -256,12 +264,12 @@ current buffer position data."
 (defun modablist--make-selection-ov ()
   "Make selection overlay."
   (modablist-current-buffer
-    (modablist--ensure-current-selection)
-    (save-excursion
-      (dolist (box modablist--selected-box)
-        (modablist--move-to (car box) (cdr box))
-        (let ((range (modablist--current-range)))
-          (modablist--make-overlay (car range) (cdr range)))))))
+   (modablist--ensure-current-selection)
+   (save-excursion
+     (dolist (box modablist--selected-box)
+       (modablist--move-to (car box) (cdr box))
+       (let ((range (modablist--current-range)))
+         (modablist--make-overlay (car range) (cdr range)))))))
 
 (defun modablist-remove-all-selections ()
   "Remove all selections."
@@ -280,23 +288,26 @@ current buffer position data."
 ;;
 
 (defun modablist--confirm ()
-  "Not documented."
+  "The return key implementation.
+
+This jumps between normal and insert mode."
   (interactive)
-  (unless (tabulated-list-get-entry) (modablist--new-row))
-  (modablist--toggle-mode)
-  (if (modablist--inserting-p)
-      (use-local-map modablist-mode-insert-map)
-    (use-local-map modablist-mode-map)
-    (modablist--change-data (modablist--current-column) (modablist--current-content))
-    (tabulated-list-revert)))
+  (if (null (tabulated-list-get-entry))
+      (modablist--new-row)
+    (modablist--toggle-mode)
+    (if (modablist--inserting-p)
+        (use-local-map modablist-mode-insert-map)
+      (use-local-map modablist-mode-map)
+      (modablist--change-data (modablist--current-column) (modablist--current-content))
+      (save-window-excursion (tabulated-list-revert)))))
 
 (defun modablist--new-row ()
   "Create a new row."
   (let ((cnt 0) (columns (modablist--count-columns)) new-row)
     (while (< cnt columns) (push "" new-row) (setq cnt (1+ cnt)))
-    (setq tabulated-list-entries
-          (append tabulated-list-entries
-                  (easy-tabulated-list-form-entries new-row)))
+    (setq new-row (easy-tabulated-list-form-entries new-row)
+          tabulated-list-entries (append tabulated-list-entries new-row))
+    (run-hook-with-args 'modablist-new-data-hook new-row)
     (tabulated-list-revert)))
 
 (defun modablist--pre-command ()
