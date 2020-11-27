@@ -209,10 +209,18 @@ have changed.
   - `tabulated-list-padding' - Starting column to print table.
   - `tabulated-list-format' - Each column's width definition."
   (setq modablist--column-boundary '())
-  (let ((boundary tabulated-list-padding))
+  (let* ((boundary tabulated-list-padding) (entry (tabulated-list-get-entry))
+         boundary-fmt boundary-data (index 0) data-len)
     (push boundary modablist--column-boundary)
     (mapc (lambda (fmt)
-            (setq boundary (+ boundary (nth 1 fmt)))
+            (when entry
+              (setq data-len (length (elt entry index))
+                    boundary-data (+ boundary data-len)
+                    index (1+ index)))
+            (setq boundary-fmt (+ boundary (nth 1 fmt))
+                  boundary (max boundary-data boundary-fmt))
+            (when (and entry (<= boundary-fmt boundary-data))
+              (setq boundary (1+ boundary)))
             (push boundary modablist--column-boundary))
           tabulated-list-format)
     (setq modablist--column-boundary (reverse modablist--column-boundary))))
@@ -368,6 +376,7 @@ This jumps between normal and insert mode."
 
 (defun modablist--post-command ()
   "Post command for function `modablist-mode'."
+  (modablist--update-column-boundary)
   (let ((beg (car modablist--box-range)) (end (cdr modablist--box-range)))
     (when (and (modablist--inserting-p)
                (not (modablist--in-range-p (point) beg end)))
@@ -387,7 +396,6 @@ This jumps between normal and insert mode."
   "Enable `modablist' in current buffer."
   (if (derived-mode-p 'tabulated-list-mode)
       (progn
-        (modablist--update-column-boundary)
         (setq modablist--buffer (current-buffer))
         (add-hook 'pre-command-hook #'modablist--pre-command nil t)
         (add-hook 'post-command-hook #'modablist--post-command nil t))
