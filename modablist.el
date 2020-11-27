@@ -350,7 +350,6 @@ This jumps between normal and insert mode."
       (use-local-map modablist-mode-map)
       (modablist--change-data (modablist--current-column) (modablist--current-input))
       (setq modablist--box-range nil)
-      (jcs-log-list tabulated-list-entries)
       (save-window-excursion (tabulated-list-revert)))))
 
 (defun modablist--new-row ()
