@@ -196,7 +196,7 @@ You will need to call function `tabulated-list-revert' afterward."
     (line-number-at-pos)))
 
 (defun modablist--current-row ()
-  "Return current row number."
+  "Return current row in table."
   (let ((first-entry-line (modablist--first-entry-line)))
     (1+ (- (line-number-at-pos) first-entry-line))))
 
@@ -218,14 +218,18 @@ have changed.
     (setq modablist--column-boundary (reverse modablist--column-boundary))))
 
 (defun modablist--current-column ()
-  "Return current column number."
+  "Return current column in table."
   (let ((cur-col (current-column)) (len (length modablist--column-boundary))
         (index 0) break column upper-column lower-column)
     (while (and (not break) (< index (1- len)))
       (setq lower-column (nth index modablist--column-boundary)
             upper-column (nth (1+ index) modablist--column-boundary))
-      (when (modablist--in-range-p cur-col lower-column upper-column)
-        (setq column index break t))
+      (if modablist--box-range
+          (when (= (modablist--column-to-pos lower-column)
+                   (cdr modablist--box-range))
+            (setq column index break t))
+        (when (modablist--in-range-p cur-col lower-column upper-column)
+          (setq column index break t)))
       (setq index (1+ index)))
     (when column (setq column (1+ column)))
     column))
@@ -255,7 +259,7 @@ current buffer position data."
 
 (defun modablist--current-input ()
   "Return content from box."
-  (let* ((range (modablist--current-range)) (beg (car range)) (end (cdr range)))
+  (let* ((range modablist--box-range) (beg (car range)) (end (cdr range)))
     (when (and (integerp beg) (integerp end))
       (string-trim (buffer-substring beg end)))))
 
@@ -345,11 +349,8 @@ This jumps between normal and insert mode."
               (setq modablist--box-range (cons beg (if (< end-text end) end end-text))))))
       (use-local-map modablist-mode-map)
       (modablist--change-data (modablist--current-column) (modablist--current-input))
-      (modablist-write-buffer
-        (setcdr modablist--box-range (modablist--column-to-pos 33))
-        (message "rang: %s" modablist--box-range)
-        (modablist--delete-region-by-range modablist--box-range))
       (setq modablist--box-range nil)
+      (jcs-log-list tabulated-list-entries)
       (save-window-excursion (tabulated-list-revert)))))
 
 (defun modablist--new-row ()
