@@ -380,6 +380,7 @@ This jumps between normal and insert mode."
   (let ((beg (car modablist--box-range)) (end (cdr modablist--box-range)))
     (when (and (modablist--inserting-p)
                (not (modablist--in-range-p (point) beg end)))
+      ;; TODO: ..
       ;;(set-window-point nil modablist--window-point)
       ))
   (modablist--clear-overlays)
