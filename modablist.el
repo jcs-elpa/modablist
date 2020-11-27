@@ -104,6 +104,9 @@ The data is construct by (row . column).")
   "The window point that use to revert position from the buffer when user
 are still attempt to insert in the table box.")
 
+(defvar-local modablist--box nil
+  "Record the box in cons cell by form of (row . column).")
+
 (defvar-local modablist--box-range nil
   "Current box range in absolute position.
 The data is a cons cell by (beg . end).")
@@ -242,6 +245,10 @@ have changed.
     (when column (setq column (1+ column)))
     column))
 
+(defun modablist--current-row-column ()
+  "Return current row and column in cons cell."
+  (cons (modablist--current-row) (modablist--current-column)))
+
 (defun modablist--get-column-boundary (column &optional pos)
   "Return the column boundary by COLUMN.
 
@@ -343,6 +350,7 @@ This jumps between normal and insert mode."
     (modablist--toggle-mode)
     (if (modablist--inserting-p)
         (progn
+          (setq modablist--box (modablist--current-row-column))
           (use-local-map modablist-mode-insert-map)
           (let* ((content (modablist--current-content))
                  (len-content (length content))
@@ -356,7 +364,7 @@ This jumps between normal and insert mode."
               (insert content)
               (setq modablist--box-range (cons beg (if (< end-text end) end end-text))))))
       (use-local-map modablist-mode-map)
-      (modablist--change-data (modablist--current-column) (modablist--current-input))
+      (modablist--change-data (cdr modablist--box) (modablist--current-input))
       (setq modablist--box-range nil)
       (save-window-excursion (tabulated-list-revert)))))
 
@@ -376,13 +384,11 @@ This jumps between normal and insert mode."
 
 (defun modablist--post-command ()
   "Post command for function `modablist-mode'."
-  (modablist--update-column-boundary)
-  (let ((beg (car modablist--box-range)) (end (cdr modablist--box-range)))
-    (when (and (modablist--inserting-p)
-               (not (modablist--in-range-p (point) beg end)))
-      ;; TODO: ..
-      ;;(set-window-point nil modablist--window-point)
-      ))
+  (if (modablist--inserting-p)
+      (let ((beg (car modablist--box-range)) (end (cdr modablist--box-range)))
+        (unless (modablist--in-range-p (point) beg end)
+          (set-window-point nil modablist--window-point)))
+    (modablist--update-column-boundary))
   (modablist--clear-overlays)
   (unless modablist--continue-select-p (modablist-remove-all-selections))
   (modablist--kill-timer modablist--timer-selection-overlay)
