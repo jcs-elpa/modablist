@@ -4,6 +4,8 @@
 # modablist
 > Modifiable tabulated-list extension.
 
+This package makes `tabulated-list` editable like spreadsheet.
+
 ## Work with upstream
 
 N/A
