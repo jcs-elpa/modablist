@@ -213,7 +213,7 @@ have changed.
   - `tabulated-list-format' - Each column's width definition."
   (setq modablist--column-boundary '())
   (let* ((boundary tabulated-list-padding) (entry (tabulated-list-get-entry))
-         boundary-fmt boundary-data (index 0) data-len)
+         boundary-fmt (boundary-data -1) (index 0) data-len)
     (push boundary modablist--column-boundary)
     (mapc (lambda (fmt)
             (when entry
