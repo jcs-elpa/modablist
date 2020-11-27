@@ -4,6 +4,10 @@
 # modablist
 > Modifiable tabulated-list extension.
 
+## Work with upstream
+
+N/A
+
 ## Contribution
 
 If you would like to contribute to this project, you may either
