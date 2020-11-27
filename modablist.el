@@ -234,7 +234,7 @@ have changed.
             upper-column (nth (1+ index) modablist--column-boundary))
       (if modablist--box-range
           (when (= (modablist--column-to-pos lower-column)
-                   (cdr modablist--box-range))
+                   (car modablist--box-range))
             (setq column index break t))
         (when (modablist--in-range-p cur-col lower-column upper-column)
           (setq column index break t)))
@@ -405,6 +405,7 @@ This jumps between normal and insert mode."
 
 (defun modablist--disable ()
   "Disable `modablist' in current buffer."
+  (modablist--clear-overlays)
   (remove-hook 'pre-command-hook #'modablist--pre-command t)
   (remove-hook 'post-command-hook #'modablist--post-command t))
 
