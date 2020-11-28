@@ -190,7 +190,9 @@ The data is a cons cell by (beg . end).")
 
 (defun modablist--edit-box-range ()
   "Return the range while editing/inserting mode."
-  (cons (car modablist--box-range) (overlay-end modablist--end-overlay)))
+  (cons (car modablist--box-range)
+        (or (ignore-errors (overlay-end modablist--end-overlay))
+            (cdr modablist--box-range))))
 
 (defun modablist--change-data (column value)
   "Change current table value to VALUE.
@@ -315,8 +317,18 @@ current buffer position data."
       (push ol modablist--overlays)  ; NOTE: Eventually get managed to list.
       ol)))
 
-(defun modablist--clear-overlays ()
+(defun modablist--clean-overlays ()
   "Remove all overlays."
+  (modablist--clear-selection-overlays)
+  (modablist--clear-end-overlay))
+
+(defun modablist--clear-end-overlay ()
+  "Remove box end overlay."
+  (modablist--delete-overlay modablist--end-overlay)
+  (setq modablist--end-overlay nil))
+
+(defun modablist--clear-selection-overlays ()
+  "Remove all selection overlays."
   (dolist (ov modablist--overlays) (modablist--delete-overlay ov))
   (setq modablist--overlays '()))
 
@@ -353,11 +365,6 @@ current buffer position data."
   (setq modablist--continue-select-p t)
   (call-interactively #'mouse-set-point)
   (modablist--ensure-current-selection))
-
-(defun modablist--clear-end-overlay ()
-  "Clear box end overlay."
-  (modablist--delete-overlay modablist--end-overlay)
-  (setq modablist--end-overlay nil))
 
 (defun modablist--make-end-overlay ()
   "Make the box ending overlay.
@@ -425,7 +432,7 @@ This jumps between normal and insert mode."
         (unless (modablist--in-range-p (point) beg end)
           (set-window-point nil modablist--window-point)))
     (modablist--update-column-boundary))
-  (modablist--clear-overlays)
+  (modablist--clean-overlays)
   (unless modablist--continue-select-p (modablist-remove-all-selections))
   (modablist--kill-timer modablist--timer-selection-overlay)
   (setq modablist--timer-selection-overlay
@@ -447,7 +454,7 @@ This jumps between normal and insert mode."
 
 (defun modablist--disable ()
   "Disable `modablist' in current buffer."
-  (modablist--clear-overlays)
+  (modablist--clean-overlays)
   (remove-hook 'pre-command-hook #'modablist--pre-command t)
   (remove-hook 'post-command-hook #'modablist--post-command t))
 
