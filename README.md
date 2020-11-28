@@ -12,6 +12,13 @@ By the current implementation this package alone probably doesn't do much.
 
 N/A
 
+## Faces
+
+The following list of faces are possible to customize.
+
+* `modablist-select-face` - Overlay face when selecting.
+* `modablist-insert-face` - Overlay face when inserting.
+
 ## Contribution
 
 If you would like to contribute to this project, you may either
