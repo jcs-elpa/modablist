@@ -154,10 +154,10 @@ The data is a cons cell by (beg . end).")
 ;; (@* "Util" )
 ;;
 
-(defun modablist--in-range-p (in-val in-min in-max)
+(defun modablist--in-range-p (in-val in-min in-max f-min f-max)
   "Check to see if IN-VAL is between IN-MIN and IN-MAX."
   (and (integerp in-val) (integerp in-min) (integerp in-max)
-       (<= in-min in-val) (< in-val in-max)))
+       (funcall f-min in-min in-val) (funcall f-max in-val in-max)))
 
 (defun modablist--column-to-pos (column)
   "Convert COLUMN to position."
@@ -259,7 +259,7 @@ have changed.
           (when (= (modablist--column-to-pos lower-column)
                    (car modablist--box-range))
             (setq column index break t))
-        (when (modablist--in-range-p cur-col lower-column upper-column)
+        (when (modablist--in-range-p cur-col lower-column upper-column '<= '<)
           (setq column index break t)))
       (setq index (1+ index)))
     (when column (setq column (1+ column)))
@@ -429,7 +429,7 @@ This jumps between normal and insert mode."
   "Post command for function `modablist-mode'."
   (if (modablist--inserting-p)
       (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range)))
-        (unless (modablist--in-range-p (point) beg end)
+        (unless (modablist--in-range-p (point) beg end '<= '<=)
           (set-window-point nil modablist--window-point)))
     (modablist--update-column-boundary))
   (modablist--clean-overlays)
