@@ -218,6 +218,12 @@ Optional argument is default to space."
 
 (defun modablist--get-entry ()
   "Safe way to get entry."
+  ;; TODO: I don't know if this is the safe way to do it.
+  ;; Sometime when I call function `tabulated-list-get-entry' but it
+  ;; appears to return value `nil'. If you look at the source of the
+  ;; function and it uses function `get-text-property' to get the
+  ;; value of the entry. I assume that end of the line will always
+  ;; have text properties to get. But this may be not true!
   (save-excursion (end-of-line) (tabulated-list-get-entry)))
 
 (defun modablist--edit-box-range ()
