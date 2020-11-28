@@ -184,6 +184,16 @@ The data is a cons cell by (beg . end).")
   "Invert the insert flag."
   (setq buffer-read-only (not buffer-read-only)))
 
+(defun modablist--set-region-writeable (begin end)
+  "Removes the read-only text property from the marked region."
+  ;; See http://stackoverflow.com/questions/7410125
+  (interactive "r")
+  (let ((modified (buffer-modified-p))
+        (inhibit-read-only t))
+    (add-text-properties (point-min) (point-max) '(read-only t))
+    (remove-text-properties begin end '(read-only t))
+    (set-buffer-modified-p modified)))
+
 ;;
 ;; (@* "Table" )
 ;;
@@ -394,7 +404,8 @@ This jumps between normal and insert mode."
           (let* ((content (modablist--current-content))
                  (len-content (length content))
                  (range (modablist--current-range))
-                 beg end end-text)
+                 beg end end-text
+                 box-beg box-end)
             (when range
               (setq beg (car range) end (cdr range)
                     end-text (+ beg len-content))
@@ -402,7 +413,9 @@ This jumps between normal and insert mode."
               (delete-region beg end-text)
               (goto-char beg)
               (insert content)
-              (setq modablist--box-range (cons beg (max end end-text)))
+              (setq box-beg beg box-end (max end end-text))
+              (setq modablist--box-range (cons box-beg box-end))
+              (modablist--set-region-writeable box-beg box-end)
               (modablist--make-end-overlay))))
       (use-local-map modablist-mode-map)
       (modablist--change-data (cdr modablist--box) (modablist--current-input))
