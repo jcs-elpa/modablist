@@ -10,6 +10,12 @@ By the current implementation this package alone doesn't do much. You
 would probably need to extend this package and treat this as a `library`
 or `framework`.
 
+## Features
+
+* Editable table
+* Add new row (empty)
+* Table box selection
+
 ## Work with upstream
 
 N/A
