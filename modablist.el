@@ -365,7 +365,6 @@ This is use to represet the current end position of the editing box."
   (modablist--clear-end-overlay)
   (let* ((end (cdr modablist--box-range)) (beg (1- end))
          (ol (make-overlay beg end)))
-    (overlay-put ol 'face 'modablist-insert-face)
     (overlay-put ol 'invisible t)
     (setq modablist--end-overlay ol)
     ol))
