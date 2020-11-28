@@ -201,6 +201,10 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
 ;; (@* "Table" )
 ;;
 
+(defun modablist--refresh ()
+  "Refresh the table; wrapper for function `tabulated-list-revert'."
+  (save-window-excursion (tabulated-list-revert)))
+
 (defun modablist--edit-box-range ()
   "Return the range while editing/inserting mode."
   (cons (car modablist--box-range)
@@ -408,7 +412,7 @@ This jumps between normal and insert mode."
                  (len-content (length content))
                  (range (modablist--current-range))
                  beg end end-text
-                 box-beg box-end)
+                 box-beg box-end box-range)
             (when range
               (setq beg (car range) end (cdr range)
                     end-text (+ beg len-content))
@@ -416,13 +420,14 @@ This jumps between normal and insert mode."
               (delete-region beg end-text)
               (goto-char beg)
               (insert content)
-              (setq box-beg beg box-end (max end end-text))
-              (setq modablist--box-range (cons box-beg box-end))
+              (setq box-beg beg box-end (max end end-text)
+                    box-range (cons box-beg box-end))
+              (setq modablist--box-range box-range)
               (modablist--set-region-writeable box-beg box-end)
               (modablist--make-end-overlay))))
       (use-local-map modablist-mode-map)
       (modablist--change-data (cdr modablist--box) (modablist--current-input))
-      (save-window-excursion (tabulated-list-revert))
+      (modablist--refresh)
       (when modablist--box-range (goto-char (car modablist--box-range)))
       (setq modablist--box-range nil)
       (modablist--clear-end-overlay))))
@@ -434,7 +439,7 @@ This jumps between normal and insert mode."
     (setq new-row (easy-tabulated-list-form-entries new-row)
           tabulated-list-entries (append tabulated-list-entries new-row))
     (run-hook-with-args 'modablist-new-data-hook new-row)
-    (tabulated-list-revert)))
+    (modablist--refresh)))
 
 (defun modablist--pre-command ()
   "Pre command for function `modablist-mode'."
@@ -448,7 +453,7 @@ This jumps between normal and insert mode."
         (unless (modablist--in-range-p (point) beg end '<= '<=)
           (set-window-point nil modablist--window-point)))
     (modablist--update-column-boundary))
-  (modablist--clean-overlays)
+  (modablist--clear-selection-overlays)
   (unless modablist--continue-select-p (modablist-remove-all-selections))
   (modablist--kill-timer modablist--timer-selection-overlay)
   (setq modablist--timer-selection-overlay
