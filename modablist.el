@@ -264,7 +264,7 @@ have changed.
   - `tabulated-list-padding' - Starting column to print table.
   - `tabulated-list-format' - Each column's width definition."
   (setq modablist--column-boundary '())
-  (let* ((boundary tabulated-list-padding) (entry (tabulated-list-get-entry))
+  (let* ((boundary tabulated-list-padding) (entry (modablist--get-entry))
          boundary-fmt (boundary-data -1) (index 0) data-len)
     (push boundary modablist--column-boundary)
     (mapc (lambda (fmt)
@@ -322,7 +322,7 @@ current buffer position data."
 (defun modablist--current-content ()
   "Return content from box."
   (let ((column (modablist--current-column)))
-    (when column (elt (tabulated-list-get-entry) (1- column)))))
+    (when column (elt (modablist--get-entry) (1- column)))))
 
 (defun modablist--current-input ()
   "Get the current content box's input from the user."
