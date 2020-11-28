@@ -29,6 +29,12 @@
 ;;
 ;; Modifiable tabulated-list extension.
 ;;
+;; This package simply make `tabulated-list' editable like spreadsheet
+;; in excel.  You can activate this package by enable the `minor-mode'
+;; by calling the following command,
+;;
+;;   M-x modablist-mode
+;;
 
 ;;; Code:
 
