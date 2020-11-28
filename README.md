@@ -6,6 +6,8 @@
 
 This package makes `tabulated-list` editable like spreadsheet.
 
+By the current implementation this package alone probably doesn't do much.
+
 ## Work with upstream
 
 N/A
