@@ -291,7 +291,7 @@ current buffer position data."
     (when column (elt (tabulated-list-get-entry) (1- column)))))
 
 (defun modablist--current-input ()
-  "Return content from box."
+  "Get the current content box's input from the user."
   (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range)))
     (when (and (integerp beg) (integerp end))
       (string-trim (buffer-substring beg end)))))
@@ -396,7 +396,7 @@ This jumps between normal and insert mode."
               (delete-region beg end-text)
               (goto-char beg)
               (insert content)
-              (setq modablist--box-range (cons beg (if (< end-text end) end end-text)))
+              (setq modablist--box-range (cons beg (max end end-text)))
               (modablist--make-end-overlay))))
       (use-local-map modablist-mode-map)
       (modablist--change-data (cdr modablist--box) (modablist--current-input))
