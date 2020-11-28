@@ -216,6 +216,10 @@ Optional argument is default to space."
   "Refresh the table; wrapper for function `tabulated-list-revert'."
   (save-window-excursion (tabulated-list-revert)))
 
+(defun modablist--get-entry ()
+  "Safe way to get entry."
+  (save-excursion (end-of-line) (tabulated-list-get-entry)))
+
 (defun modablist--edit-box-range ()
   "Return the range while editing/inserting mode."
   (cons (car modablist--box-range)
@@ -229,7 +233,7 @@ Argument COLUMN is use to identify the the order of the table entry.
 
 Notice this function will modified variable `tabulated-list-entries'.
 You will need to call function `tabulated-list-revert' afterward."
-  (when (integerp column) (aset (tabulated-list-get-entry) (1- column) value)))
+  (when (integerp column) (aset (modablist--get-entry) (1- column) value)))
 
 (defun modablist--count-rows ()
   "Return integer value represent rows."
@@ -422,7 +426,7 @@ This is use to represet the current end position of the editing box."
 
 This jumps between normal and insert mode."
   (interactive)
-  (if (null (tabulated-list-get-entry))
+  (if (null (modablist--get-entry))
       (modablist--new-row)
     (modablist--toggle-mode)
     (if (modablist--inserting-p)
