@@ -87,6 +87,9 @@ change it to the upstream entries variable."
 (defvar-local modablist--overlays '()
   "List of selection overlays.")
 
+(defvar-local modablist--end-overlay nil
+  "The ending overlay for editing box.")
+
 (defvar-local modablist--selected-box '()
   "List of selected box.
 The data is construct by (row . column).")
@@ -157,6 +160,10 @@ The data is a cons cell by (beg . end).")
   "Safe way to kill the TIMER."
   (when (timerp timer) (cancel-timer timer)))
 
+(defun modablist--delete-overlay (ov)
+  "Safe way to delete OV."
+  (when (overlayp ov) (delete-overlay ov)))
+
 (defun modablist--delete-region-by-range (range)
   "Delete the RANGE."
   (let ((beg (car range)) (end (cdr range)))
@@ -173,6 +180,10 @@ The data is a cons cell by (beg . end).")
 ;;
 ;; (@* "Table" )
 ;;
+
+(defun modablist--edit-box-range ()
+  "Return the range while editing/inserting mode."
+  (cons (car modablist--box-range) (overlay-end modablist--end-overlay)))
 
 (defun modablist--change-data (column value)
   "Change current table value to VALUE.
@@ -274,7 +285,7 @@ current buffer position data."
 
 (defun modablist--current-input ()
   "Return content from box."
-  (let* ((range modablist--box-range) (beg (car range)) (end (cdr range)))
+  (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range)))
     (when (and (integerp beg) (integerp end))
       (string-trim (buffer-substring beg end)))))
 
@@ -299,7 +310,7 @@ current buffer position data."
 
 (defun modablist--clear-overlays ()
   "Remove all overlays."
-  (dolist (ov modablist--overlays) (delete-overlay ov))
+  (dolist (ov modablist--overlays) (modablist--delete-overlay ov))
   (setq modablist--overlays '()))
 
 (defun modablist--ensure-current-selection ()
@@ -314,12 +325,12 @@ current buffer position data."
     (modablist--make-overlay beg end)))
 
 (defun modablist--make-selection-ov ()
-  "Make selection overlay."
+  "Make all selection overlays."
   (modablist-current-buffer
     (modablist--ensure-current-selection)
     (save-excursion
       (if (modablist--inserting-p)
-          (modablist--make-selection-by-range modablist--box-range)
+          (modablist--make-selection-by-range (modablist--edit-box-range))
         (dolist (box modablist--selected-box)
           (modablist--move-to (car box) (cdr box))
           (modablist--make-selection-by-range (modablist--current-range)))))))
@@ -335,6 +346,22 @@ current buffer position data."
   (setq modablist--continue-select-p t)
   (call-interactively #'mouse-set-point)
   (modablist--ensure-current-selection))
+
+(defun modablist--clear-end-overlay ()
+  "Clear box end overlay."
+  (modablist--delete-overlay modablist--end-overlay)
+  (setq modablist--end-overlay nil))
+
+(defun modablist--make-end-overlay ()
+  "Make the box ending overlay.
+This is use to represet the current end position of the editing box."
+  (modablist--clear-end-overlay)
+  (let* ((end (cdr modablist--box-range)) (beg (1- end))
+         (ol (make-overlay beg end)))
+    (overlay-put ol 'face 'modablist-insert-face)
+    (overlay-put ol 'invisible t)
+    (setq modablist--end-overlay ol)
+    ol))
 
 ;;
 ;; (@* "Core" )
@@ -363,11 +390,14 @@ This jumps between normal and insert mode."
               (delete-region beg end-text)
               (goto-char beg)
               (insert content)
-              (setq modablist--box-range (cons beg (if (< end-text end) end end-text))))))
+              (setq modablist--box-range (cons beg (if (< end-text end) end end-text)))
+              (modablist--make-end-overlay))))
       (use-local-map modablist-mode-map)
       (modablist--change-data (cdr modablist--box) (modablist--current-input))
+      (save-window-excursion (tabulated-list-revert))
+      (when modablist--box-range (goto-char (car modablist--box-range)))
       (setq modablist--box-range nil)
-      (save-window-excursion (tabulated-list-revert)))))
+      (modablist--clear-end-overlay))))
 
 (defun modablist--new-row ()
   "Create a new row."
@@ -386,7 +416,7 @@ This jumps between normal and insert mode."
 (defun modablist--post-command ()
   "Post command for function `modablist-mode'."
   (if (modablist--inserting-p)
-      (let ((beg (car modablist--box-range)) (end (cdr modablist--box-range)))
+      (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range)))
         (unless (modablist--in-range-p (point) beg end)
           (set-window-point nil modablist--window-point)))
     (modablist--update-column-boundary))
