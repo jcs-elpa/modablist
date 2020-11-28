@@ -84,6 +84,8 @@ change it to the upstream entries variable."
       (while (< c 256)
         (define-key map (vector c) #'self-insert-command)
         (setq c (1+ c))))
+    (define-key map (kbd "<home>") #'modablist--start-of-range)
+    (define-key map (kbd "<end>") #'modablist--end-of-range)
     (define-key map (kbd "<return>") #'modablist--confirm)
     map)
   "Kaymap for function `modablist-mode' when inserting text.")
@@ -174,6 +176,15 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
   "Safe way to delete OV."
   (when (overlayp ov) (delete-overlay ov)))
 
+(defun modablist--fill-string (str len &optional char)
+  "Fill STR by CHAR to LEN.
+Optional argument is default to space."
+  (unless char (setq char " "))
+  (let ((seq "") (cnt 0) (times (- len (length str))))
+    (when (< 0 times)
+      (while (< cnt times) (setq seq (concat seq char) cnt (1+ cnt))))
+    (concat str seq)))
+
 (defun modablist--delete-region-by-range (range)
   "Delete the RANGE."
   (let ((beg (car range)) (end (cdr range)))
@@ -194,7 +205,7 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
   (let ((modified (buffer-modified-p))
         (inhibit-read-only t))
     (add-text-properties (point-min) (point-max) '(read-only t))
-    (remove-text-properties beg end '(read-only t))
+    (remove-text-properties (1- beg) end '(read-only t))
     (set-buffer-modified-p modified)))
 
 ;;
@@ -395,6 +406,16 @@ This is use to represet the current end position of the editing box."
 ;;
 ;; (@* "Core" )
 ;;
+
+(defun modablist--start-of-range ()
+  "Move to the start of box range."
+  (interactive)
+  (goto-char (car (modablist--edit-box-range))))
+
+(defun modablist--end-of-range ()
+  "Move to the end of box range."
+  (interactive)
+  (goto-char (cdr (modablist--edit-box-range))))
 
 (defun modablist--confirm ()
   "The return key implementation.
