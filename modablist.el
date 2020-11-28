@@ -361,6 +361,7 @@ This jumps between normal and insert mode."
                     end-text (+ beg len-content))
               (remove-overlays beg end)
               (delete-region beg end-text)
+              (goto-char beg)
               (insert content)
               (setq modablist--box-range (cons beg (if (< end-text end) end end-text))))))
       (use-local-map modablist-mode-map)
