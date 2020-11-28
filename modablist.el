@@ -63,6 +63,7 @@ change it to the upstream entries variable."
 
 (defvar modablist-mode-map
   (let ((map (make-sparse-keymap)))
+    ;; TODO: This doesn't work, don't know yet. :/
     (define-key map [C-mouse-1] #'modablist-continue-select-at-point)
     (define-key map (kbd "<return>") #'modablist--confirm)
     map)
