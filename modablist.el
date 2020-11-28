@@ -155,7 +155,10 @@ The data is a cons cell by (beg . end).")
 ;;
 
 (defun modablist--in-range-p (in-val in-min in-max f-min f-max)
-  "Check to see if IN-VAL is between IN-MIN and IN-MAX."
+  "Check to see if IN-VAL is between IN-MIN and IN-MAX.
+
+Argument F-MIN is function call for comparing IN-MIN and IN-VAL.
+Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
   (and (integerp in-val) (integerp in-min) (integerp in-max)
        (funcall f-min in-min in-val) (funcall f-max in-val in-max)))
 
@@ -184,14 +187,14 @@ The data is a cons cell by (beg . end).")
   "Invert the insert flag."
   (setq buffer-read-only (not buffer-read-only)))
 
-(defun modablist--set-region-writeable (begin end)
-  "Removes the read-only text property from the marked region."
+(defun modablist--set-region-writeable (beg end)
+  "Remove the read-only text property from the BEG to END."
   ;; See http://stackoverflow.com/questions/7410125
   (interactive "r")
   (let ((modified (buffer-modified-p))
         (inhibit-read-only t))
     (add-text-properties (point-min) (point-max) '(read-only t))
-    (remove-text-properties begin end '(read-only t))
+    (remove-text-properties beg end '(read-only t))
     (set-buffer-modified-p modified)))
 
 ;;
