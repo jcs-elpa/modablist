@@ -414,10 +414,12 @@ current buffer position data."
   (modablist--ensure-current-selection))
 
 (defvar-local modablist--end-column-p nil
-  "Flag to see if cursor on the last column while editing.")
+  "Flag to see if cursor on the last column while editing.
+This is only used when user is editing the last column in the table.")
 
 (defvar-local modablist--box-end-pos 0
-  "")
+  "Record the box ending position for rendering the last column after newline.
+This is only used when user is editing the last column in the table.")
 
 (defun modablist--make-end-overlay ()
   "Make the box ending overlay.
