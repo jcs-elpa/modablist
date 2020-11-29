@@ -305,7 +305,9 @@ have changed.
         (when (modablist--in-range-p cur-col lower-column upper-column '<= '<)
           (setq column index break t)))
       (setq index (1+ index)))
-    (when column (setq column (1+ column)))
+    (if column (setq column (1+ column))
+      (when (<= (nth (1- len) modablist--column-boundary) cur-col)
+        (setq column index)))
     column))
 
 (defun modablist--current-row-column ()
@@ -314,7 +316,7 @@ have changed.
 
 (defun modablist--column-width (column)
   "Return the width of the column by COLUMN index."
-  (nth 1 (elt tabulated-list-format (1- column))))
+  (when column (nth 1 (elt tabulated-list-format (1- column)))))
 
 (defun modablist--get-column-boundary (column &optional pos)
   "Return the column boundary by COLUMN.
@@ -429,6 +431,10 @@ This is use to represet the current end position of the editing box."
   (modablist--clear-end-overlay)
   (let* ((end (cdr modablist--box-range)) (beg (1- end))
          (ol (make-overlay beg end)) box-beg box-width)
+    (message "p--t: %s" (point))
+    (message "ln: %s" (line-number-at-pos))
+    (message "test: %s" (save-excursion (end-of-line) (point)))
+    (message "%s = %s" end (line-end-position))
     (setq modablist--end-overlay ol
           modablist--end-column-p (= end (line-end-position)))
     (when modablist--end-column-p
@@ -458,10 +464,14 @@ This jumps between normal and insert mode."
   (interactive)
   (if (null (modablist--get-entry))
       (modablist--new-row)
+
     (modablist--toggle-mode)
+    (setq modablist--box (modablist--current-row-column))
+    ;; Turn back off immediately if column isn't a valid value!
+    (unless (cdr modablist--box) (modablist--toggle-mode))
+
     (if (modablist--inserting-p)
         (progn
-          (setq modablist--box (modablist--current-row-column))
           (use-local-map modablist-mode-insert-map)
           (let* ((content (modablist--current-content))
                  (len-content (length content))
@@ -470,7 +480,8 @@ This jumps between normal and insert mode."
                  box-beg box-end box-range box-len
                  ;; NOTE: This variable `column-width' is for virtual
                  ;; characters that fill up with text `content'.
-                 (column-width (modablist--column-width (cdr modablist--box))))
+                 (column-width (modablist--column-width (cdr modablist--box)))
+                 offset-char)
             (when range
               (setq beg (car range) end (cdr range)
                     end-text (+ beg len-content))
@@ -481,7 +492,9 @@ This jumps between normal and insert mode."
                     box-range (cons box-beg box-end)
                     box-len (- box-end box-beg))
               (insert (modablist--fill-string content (1- box-len)))
-              (backward-char (- box-len len-content 1))
+              (setq offset-char (- box-len len-content))
+              (unless (= box-len len-content) (setq offset-char (1- offset-char)))
+              (backward-char offset-char)
               (setq modablist--box-range box-range)
               (modablist--set-region-writeable box-beg box-end)
               (modablist--make-end-overlay))))
@@ -489,7 +502,8 @@ This jumps between normal and insert mode."
       (modablist--change-data (cdr modablist--box) (modablist--current-input))
       (modablist--refresh)
       (when modablist--box-range (goto-char (car modablist--box-range)))
-      (setq modablist--box-range nil)
+      (setq modablist--box-range nil
+            modablist--box nil)
       (modablist--clear-end-overlay))))
 
 (defun modablist--new-row ()
@@ -519,6 +533,12 @@ This jumps between normal and insert mode."
   (setq modablist--timer-selection-overlay
         (run-with-timer modablist-highlight-delay nil #'modablist--make-selection-ov)))
 
+(defun modablist--self-insert (&rest _)
+  "Exection after command `self-insert-command'."
+  (when (and modablist-mode (modablist--inserting-p))
+
+    ))
+
 ;;
 ;; (@* "Entry" )
 ;;
@@ -529,7 +549,8 @@ This jumps between normal and insert mode."
       (progn
         (setq modablist--buffer (current-buffer))
         (add-hook 'pre-command-hook #'modablist--pre-command nil t)
-        (add-hook 'post-command-hook #'modablist--post-command nil t))
+        (add-hook 'post-command-hook #'modablist--post-command nil t)
+        (advice-add 'self-insert-command :after #'modablist--self-insert))
     (modablist-mode -1)
     (user-error "[WARNING] You can't enable modablist in buffer that aren't derived from `tabulated-list-mode`")))
 
@@ -537,7 +558,8 @@ This jumps between normal and insert mode."
   "Disable `modablist' in current buffer."
   (modablist--clean-overlays)
   (remove-hook 'pre-command-hook #'modablist--pre-command t)
-  (remove-hook 'post-command-hook #'modablist--post-command t))
+  (remove-hook 'post-command-hook #'modablist--post-command t)
+  (advice-remove 'self-insert-command #'modablist--self-insert))
 
 ;;;###autoload
 (define-minor-mode modablist-mode
