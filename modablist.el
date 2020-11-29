@@ -229,9 +229,13 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
 
 (defun modablist--edit-box-range ()
   "Return the range while editing/inserting mode."
+  (message "ebr: %s"
+           (ignore-errors
+             (max modablist--box-end-pos (overlay-end modablist--end-overlay))))
   (cons (car modablist--box-range)
         (or (and modablist--end-column-p (max modablist--box-end-pos (line-end-position)))
-            (ignore-errors (overlay-end modablist--end-overlay))
+            (ignore-errors
+              (max modablist--box-end-pos (overlay-end modablist--end-overlay)))
             (cdr modablist--box-range))))
 
 (defun modablist--change-data (column value)
@@ -435,11 +439,10 @@ This is use to represet the current end position of the editing box."
   (let* ((end (cdr modablist--box-range)) (beg (1- end))
          (ol (make-overlay beg end)) box-beg box-width)
     (setq modablist--end-overlay ol
-          modablist--end-column-p (= end (line-end-position)))
-    (when modablist--end-column-p
-      (setq box-beg (car modablist--box-range)
-            box-width (modablist--column-width)
-            modablist--box-end-pos (+ box-beg box-width)))
+          modablist--end-column-p (= end (line-end-position))
+          box-beg (car modablist--box-range)
+          box-width (modablist--column-width)
+          modablist--box-end-pos (+ box-beg box-width))
     ol))
 
 ;;
