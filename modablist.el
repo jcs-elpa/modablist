@@ -431,10 +431,6 @@ This is use to represet the current end position of the editing box."
   (modablist--clear-end-overlay)
   (let* ((end (cdr modablist--box-range)) (beg (1- end))
          (ol (make-overlay beg end)) box-beg box-width)
-    (message "p--t: %s" (point))
-    (message "ln: %s" (line-number-at-pos))
-    (message "test: %s" (save-excursion (end-of-line) (point)))
-    (message "%s = %s" end (line-end-position))
     (setq modablist--end-overlay ol
           modablist--end-column-p (= end (line-end-position)))
     (when modablist--end-column-p
