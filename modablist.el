@@ -214,7 +214,11 @@ Optional argument is default to space."
 
 (defun modablist--refresh ()
   "Refresh the table; wrapper for function `tabulated-list-revert'."
-  (save-window-excursion (tabulated-list-revert)))
+  (let ((pt (point)))
+    (save-window-excursion (tabulated-list-revert))
+    ;; TODO: Even we `save-excursion', the point will not be reverted.
+    ;; So I have to manually set the point. Not sure why this is happening!
+    (goto-char pt)))
 
 (defun modablist--get-entry ()
   "Safe way to get entry."
