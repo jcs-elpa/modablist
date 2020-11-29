@@ -182,12 +182,6 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
     (while (< cnt len) (setq seq (concat seq char) cnt (1+ cnt)))
     seq))
 
-(defun modablist--fill-string (str len &optional char)
-  "Fill STR by CHAR to LEN.
-Optional argument is default to space."
-  (unless char (setq char " "))
-  (concat str (modablist--string-chars (- len (length str)) char)))
-
 (defun modablist--delete-region-by-range (range)
   "Delete the RANGE."
   (let ((beg (car range)) (end (cdr range)))
@@ -486,7 +480,7 @@ This jumps between normal and insert mode."
                  ;; NOTE: This variable `column-width' is for virtual
                  ;; characters that fill up with text `content'.
                  (column-width (modablist--column-width))
-                 insert-pt offset-char)
+                 offset-char)
             (when range
               (setq beg (car range) end (cdr range)
                     end-text (+ beg len-content))
@@ -496,12 +490,11 @@ This jumps between normal and insert mode."
               (setq box-beg beg box-end (max (+ beg column-width 1) end-text)
                     box-range (cons box-beg box-end)
                     box-len (- box-end box-beg))
-              (insert (modablist--fill-string content (1- box-len)))
-              (setq insert-pt (point)
-                    offset-char (- box-len len-content))
+              (insert content)
+              (modablist--add-virtual-char (- (1- box-len) (length content)))
+              (setq offset-char (- box-len len-content))
               (unless (= box-len len-content) (setq offset-char (1- offset-char)))
               (backward-char offset-char)
-              (add-text-properties (point) insert-pt '(modablist--virtual-char t))
               (setq modablist--box-range box-range)
               (modablist--set-region-writeable box-beg box-end)
               (modablist--make-end-overlay))))
