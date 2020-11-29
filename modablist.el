@@ -314,8 +314,9 @@ have changed.
   "Return current row and column in cons cell."
   (cons (modablist--current-row) (modablist--current-column)))
 
-(defun modablist--column-width (column)
+(defun modablist--column-width (&optional column)
   "Return the width of the column by COLUMN index."
+  (unless column (setq column (cdr modablist--box)))
   (when column (nth 1 (elt tabulated-list-format (1- column)))))
 
 (defun modablist--get-column-boundary (column &optional pos)
@@ -435,7 +436,7 @@ This is use to represet the current end position of the editing box."
           modablist--end-column-p (= end (line-end-position)))
     (when modablist--end-column-p
       (setq box-beg (car modablist--box-range)
-            box-width (modablist--column-width (cdr modablist--box))
+            box-width (modablist--column-width)
             modablist--box-end-pos (+ box-beg box-width)))
     ol))
 
@@ -476,7 +477,7 @@ This jumps between normal and insert mode."
                  box-beg box-end box-range box-len
                  ;; NOTE: This variable `column-width' is for virtual
                  ;; characters that fill up with text `content'.
-                 (column-width (modablist--column-width (cdr modablist--box)))
+                 (column-width (modablist--column-width))
                  offset-char)
             (when range
               (setq beg (car range) end (cdr range)
