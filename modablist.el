@@ -176,14 +176,17 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
   "Safe way to delete OV."
   (when (overlayp ov) (delete-overlay ov)))
 
+(defun modablist--string-chars (len char)
+  "Create sequence of CHAR with LEN."
+  (let ((seq "") (cnt 0))
+    (while (< cnt len) (setq seq (concat seq char) cnt (1+ cnt)))
+    seq))
+
 (defun modablist--fill-string (str len &optional char)
   "Fill STR by CHAR to LEN.
 Optional argument is default to space."
   (unless char (setq char " "))
-  (let ((seq "") (cnt 0) (times (- len (length str))))
-    (when (< 0 times)
-      (while (< cnt times) (setq seq (concat seq char) cnt (1+ cnt))))
-    (concat str seq)))
+  (concat str (modablist--string-chars (- len (length str)) char)))
 
 (defun modablist--delete-region-by-range (range)
   "Delete the RANGE."
@@ -344,11 +347,16 @@ current buffer position data."
   (let ((column (modablist--current-column)))
     (when column (elt (modablist--get-entry) (1- column)))))
 
-(defun modablist--current-input ()
-  "Get the current content box's input from the user."
-  (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range)))
+(defun modablist--current-input (&optional trim)
+  "Get the current content box's input from the user.
+
+If optional argument TRIM is non-nil; then trim the string before returning
+the output."
+  (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range)) str)
     (when (and (integerp beg) (integerp end))
-      (string-trim (buffer-substring beg end)))))
+      (setq str (buffer-substring beg end))
+      (when trim (setq str (string-trim str)))
+      str)))
 
 (defun modablist--move-to (row column)
   "Move cursor to ROW and COLUMN."
@@ -478,7 +486,7 @@ This jumps between normal and insert mode."
                  ;; NOTE: This variable `column-width' is for virtual
                  ;; characters that fill up with text `content'.
                  (column-width (modablist--column-width))
-                 offset-char)
+                 insert-pt offset-char)
             (when range
               (setq beg (car range) end (cdr range)
                     end-text (+ beg len-content))
@@ -489,14 +497,16 @@ This jumps between normal and insert mode."
                     box-range (cons box-beg box-end)
                     box-len (- box-end box-beg))
               (insert (modablist--fill-string content (1- box-len)))
-              (setq offset-char (- box-len len-content))
+              (setq insert-pt (point)
+                    offset-char (- box-len len-content))
               (unless (= box-len len-content) (setq offset-char (1- offset-char)))
               (backward-char offset-char)
+              (add-text-properties (point) insert-pt '(modablist--virtual-char t))
               (setq modablist--box-range box-range)
               (modablist--set-region-writeable box-beg box-end)
               (modablist--make-end-overlay))))
       (use-local-map modablist-mode-map)
-      (modablist--change-data (cdr modablist--box) (modablist--current-input))
+      (modablist--change-data (cdr modablist--box) (modablist--current-input t))
       (modablist--refresh)
       (when modablist--box-range (goto-char (car modablist--box-range)))
       (setq modablist--box-range nil
@@ -513,12 +523,12 @@ This jumps between normal and insert mode."
     (modablist--refresh)))
 
 (defun modablist--pre-command ()
-  "Pre command for function `modablist-mode'."
+  "Exection for hook `pre-command-hook'."
   (setq modablist--continue-select-p nil
         modablist--window-point (window-point)))
 
 (defun modablist--post-command ()
-  "Post command for function `modablist-mode'."
+  "Exection for hook `post-command-hook'."
   (if (modablist--inserting-p)
       (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range)))
         (unless (modablist--in-range-p (point) beg end '<= '<=)
@@ -530,11 +540,37 @@ This jumps between normal and insert mode."
   (setq modablist--timer-selection-overlay
         (run-with-timer modablist-highlight-delay nil #'modablist--make-selection-ov)))
 
-(defun modablist--self-insert (&rest _)
-  "Exection after command `self-insert-command'."
-  (when (and modablist-mode (modablist--inserting-p))
+(defun modablist--add-virtual-char (n)
+  "Insert N virtual spaces."
+  (let ((start (point)))
+    (insert (modablist--string-chars n " "))
+    (add-text-properties start (point) '(modablist--virtual-char t))))
 
-    ))
+(defun modablist--delete-virtual-char (n)
+  "Delete N virtual space."
+  (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range))
+         (cnt 0) break)
+    (goto-char beg)
+    (while (and (< (point) end) (not break))
+      (when (get-text-property (point) 'modablist--virtual-char)
+        (delete-char 1)
+        (setq cnt (1+ cnt))
+        (when (= cnt n) (setq break t)))
+      (forward-char 1))))
+
+(defun modablist--after-change (&rest _)
+  "Exection for hook `after-change-functions'."
+  (when (and modablist-mode (modablist--inserting-p))
+    (let ((column-width (1+ (modablist--column-width)))
+          (input (modablist--current-input)) len-input
+          diff-len)
+      (when input
+        (setq len-input (length input))
+        (unless (= len-input column-width)
+          (setq diff-len (- column-width len-input))
+          (if (< 0 diff-len)
+              (save-excursion (modablist--add-virtual-char diff-len))
+            (save-excursion (modablist--delete-virtual-char (* diff-len -1)))))))))
 
 ;;
 ;; (@* "Entry" )
@@ -547,7 +583,7 @@ This jumps between normal and insert mode."
         (setq modablist--buffer (current-buffer))
         (add-hook 'pre-command-hook #'modablist--pre-command nil t)
         (add-hook 'post-command-hook #'modablist--post-command nil t)
-        (advice-add 'self-insert-command :after #'modablist--self-insert))
+        (add-hook 'after-change-functions #'modablist--after-change nil t))
     (modablist-mode -1)
     (user-error "[WARNING] You can't enable modablist in buffer that aren't derived from `tabulated-list-mode`")))
 
@@ -556,7 +592,7 @@ This jumps between normal and insert mode."
   (modablist--clean-overlays)
   (remove-hook 'pre-command-hook #'modablist--pre-command t)
   (remove-hook 'post-command-hook #'modablist--post-command t)
-  (advice-remove 'self-insert-command #'modablist--self-insert))
+  (remove-hook 'after-change-functions #'modablist--after-change t))
 
 ;;;###autoload
 (define-minor-mode modablist-mode
