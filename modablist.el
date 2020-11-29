@@ -233,7 +233,7 @@ Optional argument is default to space."
 (defun modablist--edit-box-range ()
   "Return the range while editing/inserting mode."
   (cons (car modablist--box-range)
-        (or (and modablist--last-column-p (line-end-position))
+        (or (and modablist--end-column-p (max modablist--box-end-pos (line-end-position)))
             (ignore-errors (overlay-end modablist--end-overlay))
             (cdr modablist--box-range))))
 
@@ -311,6 +311,10 @@ have changed.
 (defun modablist--current-row-column ()
   "Return current row and column in cons cell."
   (cons (modablist--current-row) (modablist--current-column)))
+
+(defun modablist--column-width (column)
+  "Return the width of the column by COLUMN index."
+  (nth 1 (elt tabulated-list-format (1- column))))
 
 (defun modablist--get-column-boundary (column &optional pos)
   "Return the column boundary by COLUMN.
@@ -409,17 +413,24 @@ current buffer position data."
   (call-interactively #'mouse-set-point)
   (modablist--ensure-current-selection))
 
-(defvar-local modablist--last-column-p nil
+(defvar-local modablist--end-column-p nil
   "Flag to see if cursor on the last column while editing.")
+
+(defvar-local modablist--box-end-pos 0
+  "")
 
 (defun modablist--make-end-overlay ()
   "Make the box ending overlay.
 This is use to represet the current end position of the editing box."
   (modablist--clear-end-overlay)
   (let* ((end (cdr modablist--box-range)) (beg (1- end))
-         (ol (make-overlay beg end)))
+         (ol (make-overlay beg end)) box-beg box-width)
     (setq modablist--end-overlay ol
-          modablist--last-column-p (= end (line-end-position)))
+          modablist--end-column-p (= end (line-end-position)))
+    (when modablist--end-column-p
+      (setq box-beg (car modablist--box-range)
+            box-width (modablist--column-width (cdr modablist--box))
+            modablist--box-end-pos (+ box-beg box-width)))
     ol))
 
 ;;
@@ -452,17 +463,19 @@ This jumps between normal and insert mode."
                  (len-content (length content))
                  (range (modablist--current-range))
                  beg end end-text
-                 box-beg box-end box-range box-len)
+                 box-beg box-end box-range box-len
+                 (column-width (modablist--column-width (cdr modablist--box))))
             (when range
               (setq beg (car range) end (cdr range)
                     end-text (+ beg len-content))
               (remove-overlays beg end)
               (delete-region beg end-text)
               (goto-char beg)
-              (setq box-beg beg box-end (max end end-text)
+              (setq box-beg beg box-end (max (+ beg column-width) end-text)
                     box-range (cons box-beg box-end)
-                    box-len (- box-beg box-end))
+                    box-len (- box-end box-beg))
               (insert (modablist--fill-string content box-len))
+              (backward-char (- box-len len-content))
               (setq modablist--box-range box-range)
               (modablist--set-region-writeable box-beg box-end)
               (modablist--make-end-overlay))))
