@@ -324,6 +324,8 @@ current buffer position data."
   (when (integerp column)
     (let ((lower-column (nth (1- column) modablist--column-boundary))
           (upper-column (nth column modablist--column-boundary)))
+      (when (= column (modablist--count-columns))  ; Check last column?
+        (setq upper-column (save-excursion (end-of-line) (current-column))))
       (if pos (cons (modablist--column-to-pos lower-column)
                     (modablist--column-to-pos upper-column))
         (cons lower-column upper-column)))))
@@ -466,6 +468,8 @@ This jumps between normal and insert mode."
                  (range (modablist--current-range))
                  beg end end-text
                  box-beg box-end box-range box-len
+                 ;; NOTE: This variable `column-width' is for virtual
+                 ;; characters that fill up with text `content'.
                  (column-width (modablist--column-width (cdr modablist--box))))
             (when range
               (setq beg (car range) end (cdr range)
