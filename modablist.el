@@ -229,7 +229,8 @@ Optional argument is default to space."
 (defun modablist--edit-box-range ()
   "Return the range while editing/inserting mode."
   (cons (car modablist--box-range)
-        (or (ignore-errors (overlay-end modablist--end-overlay))
+        (or (and modablist--last-column-p (line-end-position))
+            (ignore-errors (overlay-end modablist--end-overlay))
             (cdr modablist--box-range))))
 
 (defun modablist--change-data (column value)
@@ -404,13 +405,17 @@ current buffer position data."
   (call-interactively #'mouse-set-point)
   (modablist--ensure-current-selection))
 
+(defvar-local modablist--last-column-p nil
+  "Flag to see if cursor on the last column while editing.")
+
 (defun modablist--make-end-overlay ()
   "Make the box ending overlay.
 This is use to represet the current end position of the editing box."
   (modablist--clear-end-overlay)
   (let* ((end (cdr modablist--box-range)) (beg (1- end))
          (ol (make-overlay beg end)))
-    (setq modablist--end-overlay ol)
+    (setq modablist--end-overlay ol
+          modablist--last-column-p (= end (line-end-position)))
     ol))
 
 ;;
