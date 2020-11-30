@@ -248,11 +248,15 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
 
 (defun modablist--refresh ()
   "Refresh the table; wrapper for function `tabulated-list-revert'."
-  (let ((pt (point)))
+  (let ((id (tabulated-list-get-id)) (entry (tabulated-list-get-entry))
+        (col (current-column)) break)
     (save-window-excursion (tabulated-list-revert))
-    ;; TODO: Even we `save-excursion', the point will not be reverted.
-    ;; So I have to manually set the point. Not sure why this is happening!
-    (goto-char pt)))
+    (goto-char (point-min))
+    (while (and (not break) (not (eobp)))
+      (when (and (eq id (tabulated-list-get-id)) (eq entry (tabulated-list-get-entry)))
+        (setq break t))
+      (forward-line 1))
+    (if break (move-to-column col) (goto-char (point-min)))))
 
 (defun modablist--get-entry ()
   "Safe way to get entry."
