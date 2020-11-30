@@ -26,6 +26,11 @@ Most packages would probably have their own variable that contains all data
 to and just use `tabulated-list` to display it. Yet this package respect data
 from `tabulated-list` itself and **NOT** the data from their variable.
 
+Here is the list of open API/hooks for you to update the upstream database
+from user.
+
+* `modablist-new-data-hook`
+* `modablist-change-data-hook`
 
 ## Faces
 
