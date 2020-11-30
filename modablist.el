@@ -229,9 +229,6 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
 
 (defun modablist--edit-box-range ()
   "Return the range while editing/inserting mode."
-  (message "ebr: %s"
-           (ignore-errors
-             (max modablist--box-end-pos (overlay-end modablist--end-overlay))))
   (cons (car modablist--box-range)
         (or (and modablist--end-column-p (max modablist--box-end-pos (line-end-position)))
             (ignore-errors
@@ -538,21 +535,26 @@ This jumps between normal and insert mode."
 
 (defun modablist--add-virtual-char (n)
   "Insert N virtual spaces."
-  (let ((start (point)))
-    (insert (modablist--string-chars n " "))
-    (add-text-properties start (point) '(modablist--virtual-char t))))
+  (let ((start (point)) (end (cdr (modablist--edit-box-range))))
+    (when end
+      (goto-char end)
+      (insert (modablist--string-chars n " "))
+      (add-text-properties start (point) '(modablist--virtual-char t))
+      (when (overlayp modablist--end-overlay)
+        (move-overlay modablist--end-overlay (1- (point)) (point))
+        )
+      )))
 
 (defun modablist--delete-virtual-char (n)
   "Delete N virtual space."
-  (let* ((range (modablist--edit-box-range)) (beg (car range)) (end (cdr range))
+  (let* ((range (modablist--edit-box-range)) (end (cdr range))
          (cnt 0) break)
-    (goto-char beg)
     (while (and (< (point) end) (not break))
-      (when (get-text-property (point) 'modablist--virtual-char)
+      (if (not (get-text-property (point) 'modablist--virtual-char))
+          (forward-char 1)
         (delete-char 1)
         (setq cnt (1+ cnt))
-        (when (= cnt n) (setq break t)))
-      (forward-char 1))))
+        (when (= cnt n) (setq break t))))))
 
 (defun modablist--after-change (&rest _)
   "Exection for hook `after-change-functions'."
@@ -564,6 +566,7 @@ This jumps between normal and insert mode."
         (setq len-input (length input))
         (unless (= len-input column-width)
           (setq diff-len (- column-width len-input))
+          (message "diff-len: %s" diff-len)
           (if (< 0 diff-len)
               (save-excursion (modablist--add-virtual-char diff-len))
             (save-excursion (modablist--delete-virtual-char (* diff-len -1)))))))))
