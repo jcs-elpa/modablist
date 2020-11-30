@@ -4,6 +4,10 @@
 # modablist
 > Modifiable tabulated-list extension.
 
+<p align="center">
+  <img src="./etc/demo.gif"/>
+</p>
+
 This package makes `tabulated-list` editable like spreadsheet.
 
 By the current implementation this package alone doesn't do much. You
