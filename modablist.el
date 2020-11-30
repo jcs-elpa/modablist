@@ -66,6 +66,7 @@ change it to the upstream entries variable."
     ;; TODO: This doesn't work, don't know yet. :/
     (define-key map [C-mouse-1] #'modablist-continue-select-at-point)
     (define-key map (kbd "<return>") #'modablist--confirm)
+    (define-key map (kbd "<kp-enter>") #'modablist--confirm)
     map)
   "Kaymap for function `modablist-mode'.")
 
@@ -87,6 +88,7 @@ change it to the upstream entries variable."
     (define-key map (kbd "<home>") #'modablist--start-of-range)
     (define-key map (kbd "<end>") #'modablist--end-of-range)
     (define-key map (kbd "<return>") #'modablist--confirm)
+    (define-key map (kbd "<kp-enter>") #'modablist--confirm)
     map)
   "Kaymap for function `modablist-mode' when inserting text.")
 
