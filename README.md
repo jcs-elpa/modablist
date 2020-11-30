@@ -18,7 +18,10 @@ or `framework`.
 
 ## Work with upstream
 
-N/A
+Most packages would probably have their own variable that contains all data
+to and just use `tabulated-list` to display it. Yet this package respect data
+from `tabulated-list` itself and **NOT** the data from their variable.
+
 
 ## Faces
 
