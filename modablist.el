@@ -508,9 +508,7 @@ This is use to represet the current end position of the editing box."
 
 This jumps between normal and insert mode."
   (interactive)
-  (if (null (modablist--get-entry))
-      (modablist--new-row)
-
+  (if (null (modablist--get-entry)) (modablist--new-row)
     (modablist--toggle-mode)
     (setq modablist--box (modablist--current-row-column))
     ;; Turn back off immediately if column isn't a valid value!
