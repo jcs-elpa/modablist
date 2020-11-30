@@ -54,10 +54,12 @@
   :group 'modablist)
 
 (defcustom modablist-new-data-hook nil
-  "Hooks run after new data is inserted to `tabulated-list-entries'.
+  "Hooks run after new data is inserted to `tabulated-list-entries'."
+  :type 'hook
+  :group 'modablist)
 
-This variable is use when you want to respect the input from the user and
-change it to the upstream entries variable."
+(defcustom modablist-change-data-hook nil
+  "Hooks run after the data has changed from user input."
   :type 'hook
   :group 'modablist)
 
@@ -270,9 +272,14 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
 ;;
 ;; This is for these following functions:
 ;;
+;; - `modablist--get-table-entry'
 ;; - `modablist--get-id'
 ;; - `modablist--get-entry'
 ;;
+
+(defun modablist--get-table-entry ()
+  "Safe way to get id."
+  (list (modablist--get-id) (modablist--get-entry)))
 
 (defun modablist--get-id ()
   "Safe way to get id."
@@ -543,6 +550,7 @@ This jumps between normal and insert mode."
               (modablist--make-end-overlay))))
       (use-local-map modablist-mode-map)
       (modablist--change-data (cdr modablist--box) (modablist--current-input t))
+      (run-hook-with-args 'modablist-change-data-hook (modablist--get-table-entry))
       (modablist--refresh)
       (setq modablist--box-range nil modablist--box nil)
       (modablist--clear-end-overlay))))
