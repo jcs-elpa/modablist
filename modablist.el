@@ -250,24 +250,36 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
 
 (defun modablist--refresh ()
   "Refresh the table; wrapper for function `tabulated-list-revert'."
-  (let ((id (tabulated-list-get-id)) (entry (tabulated-list-get-entry))
-        (col (current-column)) break)
+  (let ((id (modablist--get-id)) (entry (modablist--get-entry))
+        (col (current-column)) break cur-id cur-entry)
     (save-window-excursion (tabulated-list-revert))
     (goto-char (point-min))
     (while (and (not break) (not (eobp)))
-      (when (and (eq id (tabulated-list-get-id)) (eq entry (tabulated-list-get-entry)))
-        (setq break t))
-      (forward-line 1))
+      (setq cur-id (tabulated-list-get-id) cur-entry (tabulated-list-get-entry))
+      (if (and (eq id cur-id) (eq entry cur-entry))
+          (setq break t)
+        (forward-line 1)))
     (if break (move-to-column col) (goto-char (point-min)))))
+
+;; TODO: I don't know if this is the safe way to do it.
+;; Sometime when I call function `tabulated-list-get-entry' but it
+;; appears to return value `nil'. If you look at the source of the
+;; function and it uses function `get-text-property' to get the
+;; value of the entry. I assume that end of the line will always
+;; have text properties to get. But this may be not true!
+;;
+;; This is for these following functions:
+;;
+;; - `modablist--get-id'
+;; - `modablist--get-entry'
+;;
+
+(defun modablist--get-id ()
+  "Safe way to get id."
+  (save-excursion (end-of-line) (tabulated-list-get-id)))
 
 (defun modablist--get-entry ()
   "Safe way to get entry."
-  ;; TODO: I don't know if this is the safe way to do it.
-  ;; Sometime when I call function `tabulated-list-get-entry' but it
-  ;; appears to return value `nil'. If you look at the source of the
-  ;; function and it uses function `get-text-property' to get the
-  ;; value of the entry. I assume that end of the line will always
-  ;; have text properties to get. But this may be not true!
   (save-excursion (end-of-line) (tabulated-list-get-entry)))
 
 (defun modablist--edit-box-range ()
@@ -533,9 +545,7 @@ This jumps between normal and insert mode."
       (use-local-map modablist-mode-map)
       (modablist--change-data (cdr modablist--box) (modablist--current-input t))
       (modablist--refresh)
-      (when modablist--box-range (goto-char (car modablist--box-range)))
-      (setq modablist--box-range nil
-            modablist--box nil)
+      (setq modablist--box-range nil modablist--box nil)
       (modablist--clear-end-overlay))))
 
 (defun modablist--new-row ()
