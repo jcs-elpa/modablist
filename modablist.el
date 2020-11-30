@@ -565,7 +565,6 @@ of box instead of current point."
         (setq len-input (length input))
         (unless (= len-input column-width)
           (setq diff-len (- column-width len-input))
-          (message "diff-len: %s" diff-len)
           (if (< 0 diff-len)
               (save-excursion (modablist--add-virtual-char diff-len t))
             (save-excursion (modablist--delete-virtual-char (* diff-len -1)))))))))
