@@ -524,7 +524,8 @@ This jumps between normal and insert mode."
                  box-beg box-end box-range box-len
                  ;; NOTE: This variable `column-width' is for virtual
                  ;; characters that fill up with text `content'.
-                 (column-width (modablist--column-width)))
+                 (column-width (modablist--column-width))
+                 len-fill)
             (when range
               (setq beg (car range) end (cdr range)
                     end-text (+ beg len-content))
@@ -534,10 +535,10 @@ This jumps between normal and insert mode."
               (setq box-beg beg box-end (max (+ beg column-width 1) end-text)
                     box-range (cons box-beg box-end)
                     box-len (- box-end box-beg)
-                    modablist--box-range box-range)
+                    modablist--box-range box-range
+                    len-fill (- (1- box-len) (length content)))
               (insert content)
-              (save-excursion
-                (modablist--add-virtual-char (- (1- box-len) (length content))))
+              (save-excursion (modablist--add-virtual-char len-fill))
               (modablist--set-region-writeable box-beg box-end)
               (modablist--make-end-overlay))))
       (use-local-map modablist-mode-map)
