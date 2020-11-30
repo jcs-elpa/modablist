@@ -479,8 +479,7 @@ This jumps between normal and insert mode."
                  box-beg box-end box-range box-len
                  ;; NOTE: This variable `column-width' is for virtual
                  ;; characters that fill up with text `content'.
-                 (column-width (modablist--column-width))
-                 offset-char)
+                 (column-width (modablist--column-width)))
             (when range
               (setq beg (car range) end (cdr range)
                     end-text (+ beg len-content))
@@ -489,13 +488,11 @@ This jumps between normal and insert mode."
               (goto-char beg)
               (setq box-beg beg box-end (max (+ beg column-width 1) end-text)
                     box-range (cons box-beg box-end)
-                    box-len (- box-end box-beg))
+                    box-len (- box-end box-beg)
+                    modablist--box-range box-range)
               (insert content)
-              (modablist--add-virtual-char (- (1- box-len) (length content)))
-              (setq offset-char (- box-len len-content))
-              (unless (= box-len len-content) (setq offset-char (1- offset-char)))
-              (backward-char offset-char)
-              (setq modablist--box-range box-range)
+              (save-excursion
+                (modablist--add-virtual-char (- (1- box-len) (length content))))
               (modablist--set-region-writeable box-beg box-end)
               (modablist--make-end-overlay))))
       (use-local-map modablist-mode-map)
@@ -533,17 +530,19 @@ This jumps between normal and insert mode."
   (setq modablist--timer-selection-overlay
         (run-with-timer modablist-highlight-delay nil #'modablist--make-selection-ov)))
 
-(defun modablist--add-virtual-char (n)
-  "Insert N virtual spaces."
-  (let ((start (point)) (end (cdr (modablist--edit-box-range))))
-    (when end
-      (goto-char end)
-      (insert (modablist--string-chars n " "))
-      (add-text-properties start (point) '(modablist--virtual-char t))
-      (when (overlayp modablist--end-overlay)
-        (move-overlay modablist--end-overlay (1- (point)) (point))
-        )
-      )))
+(defun modablist--add-virtual-char (n &optional add-to-end)
+  "Insert N virtual spaces.
+
+If optional argument ADD-TO-END is non-nil; add the virtual spaces to the end
+of box instead of current point."
+  (let ((start (point)))
+    (when add-to-end
+      (setq end (cdr (modablist--edit-box-range)))
+      (goto-char end))
+    (insert (modablist--string-chars n " "))
+    (add-text-properties start (point) '(modablist--virtual-char t))
+    (when (overlayp modablist--end-overlay)
+      (move-overlay modablist--end-overlay (1- (point)) (point)))))
 
 (defun modablist--delete-virtual-char (n)
   "Delete N virtual space."
@@ -568,7 +567,7 @@ This jumps between normal and insert mode."
           (setq diff-len (- column-width len-input))
           (message "diff-len: %s" diff-len)
           (if (< 0 diff-len)
-              (save-excursion (modablist--add-virtual-char diff-len))
+              (save-excursion (modablist--add-virtual-char diff-len t))
             (save-excursion (modablist--delete-virtual-char (* diff-len -1)))))))))
 
 ;;
