@@ -123,6 +123,43 @@ are still attempt to insert in the table box.")
   "Current box range in absolute position.
 The data is a cons cell by (beg . end).")
 
+(defvar-local modablist--end-column-p nil
+  "Flag to see if cursor on the last column while editing.
+This is only used when user is editing the last column in the table.")
+
+(defvar-local modablist--box-end-pos 0
+  "Record the box ending position for rendering the last column after newline.
+This is only used when user is editing the last column in the table.")
+
+;;
+;; (@* "Entry" )
+;;
+
+(defun modablist--enable ()
+  "Enable `modablist' in current buffer."
+  (if (derived-mode-p 'tabulated-list-mode)
+      (progn
+        (setq modablist--buffer (current-buffer))
+        (add-hook 'pre-command-hook #'modablist--pre-command nil t)
+        (add-hook 'post-command-hook #'modablist--post-command nil t)
+        (add-hook 'after-change-functions #'modablist--after-change nil t))
+    (modablist-mode -1)
+    (user-error "[WARNING] You can't enable modablist in buffer that aren't derived from `tabulated-list-mode`")))
+
+(defun modablist--disable ()
+  "Disable `modablist' in current buffer."
+  (modablist--clean-overlays)
+  (remove-hook 'pre-command-hook #'modablist--pre-command t)
+  (remove-hook 'post-command-hook #'modablist--post-command t)
+  (remove-hook 'after-change-functions #'modablist--after-change t))
+
+;;;###autoload
+(define-minor-mode modablist-mode
+  "Minor mode 'modablist-mode'."
+  :lighter " ModLst"
+  :group modablist
+  (if modablist-mode (modablist--enable) (modablist--disable)))
+
 ;;
 ;; (@* "Faces" )
 ;;
@@ -421,14 +458,6 @@ the output."
   (call-interactively #'mouse-set-point)
   (modablist--ensure-current-selection))
 
-(defvar-local modablist--end-column-p nil
-  "Flag to see if cursor on the last column while editing.
-This is only used when user is editing the last column in the table.")
-
-(defvar-local modablist--box-end-pos 0
-  "Record the box ending position for rendering the last column after newline.
-This is only used when user is editing the last column in the table.")
-
 (defun modablist--make-end-overlay ()
   "Make the box ending overlay.
 This is use to represet the current end position of the editing box."
@@ -535,7 +564,7 @@ This jumps between normal and insert mode."
 
 If optional argument ADD-TO-END is non-nil; add the virtual spaces to the end
 of box instead of current point."
-  (let ((start (point)))
+  (let ((start (point)) end)
     (when add-to-end
       (setq end (cdr (modablist--edit-box-range)))
       (goto-char end))
@@ -568,35 +597,6 @@ of box instead of current point."
           (if (< 0 diff-len)
               (save-excursion (modablist--add-virtual-char diff-len t))
             (save-excursion (modablist--delete-virtual-char (* diff-len -1)))))))))
-
-;;
-;; (@* "Entry" )
-;;
-
-(defun modablist--enable ()
-  "Enable `modablist' in current buffer."
-  (if (derived-mode-p 'tabulated-list-mode)
-      (progn
-        (setq modablist--buffer (current-buffer))
-        (add-hook 'pre-command-hook #'modablist--pre-command nil t)
-        (add-hook 'post-command-hook #'modablist--post-command nil t)
-        (add-hook 'after-change-functions #'modablist--after-change nil t))
-    (modablist-mode -1)
-    (user-error "[WARNING] You can't enable modablist in buffer that aren't derived from `tabulated-list-mode`")))
-
-(defun modablist--disable ()
-  "Disable `modablist' in current buffer."
-  (modablist--clean-overlays)
-  (remove-hook 'pre-command-hook #'modablist--pre-command t)
-  (remove-hook 'post-command-hook #'modablist--post-command t)
-  (remove-hook 'after-change-functions #'modablist--after-change t))
-
-;;;###autoload
-(define-minor-mode modablist-mode
-  "Minor mode 'modablist-mode'."
-  :lighter " ModLst"
-  :group modablist
-  (if modablist-mode (modablist--enable) (modablist--disable)))
 
 (provide 'modablist)
 ;;; modablist.el ends here
