@@ -463,13 +463,13 @@ the output."
 (defun modablist--make-selection-ov ()
   "Make all selection overlays."
   (modablist-current-buffer
-   (modablist--ensure-current-selection)
-   (save-excursion
-     (if (modablist--inserting-p)
-         (modablist--make-selection-by-range (modablist--edit-box-range))
-       (dolist (box modablist--selected-box)
-         (modablist--move-to (car box) (cdr box))
-         (modablist--make-selection-by-range (modablist--current-range)))))))
+    (modablist--ensure-current-selection)
+    (save-excursion
+      (if (modablist--inserting-p)
+          (modablist--make-selection-by-range (modablist--edit-box-range))
+        (dolist (box modablist--selected-box)
+          (modablist--move-to (car box) (cdr box))
+          (modablist--make-selection-by-range (modablist--current-range)))))))
 
 (defun modablist-remove-all-selections ()
   "Remove all selections."
