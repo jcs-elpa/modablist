@@ -6,7 +6,7 @@
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
 ;; Description: Modifiable tabulated-list extension.
 ;; Keyword: table list tablist
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "24.4") (easy-tabulated-list "0.1.2"))
 ;; URL: https://github.com/jcs-elpa/modablist
 
