@@ -97,15 +97,15 @@
 (defvar-local modablist--buffer nil
   "Record the working buffer.")
 
-(defvar-local modablist--overlays '()
-  "List of selection overlays.")
-
-(defvar-local modablist--end-overlay nil
+(defvar-local modablist--overlay-end nil
   "The ending overlay for editing box.")
+
+(defvar-local modablist--overlay-selections '()
+  "List of selection overlays.")
 
 (defvar-local modablist--selected-box '()
   "List of selected box.
-The data is construct by (row . column).")
+The data is constructed by a list of (row . column).")
 
 (defvar-local modablist--column-boundary '()
   "List fo column boundary; it uses to identify the current column in table.")
@@ -294,7 +294,7 @@ Argument F-MAX is function call for comparing IN-VAL and IN-MAX."
   (cons (car modablist--box-range)
         (or (and modablist--end-column-p (max modablist--box-end-pos (line-end-position)))
             (ignore-errors
-              (max modablist--box-end-pos (overlay-end modablist--end-overlay)))
+              (max modablist--box-end-pos (overlay-end modablist--overlay-end)))
             (cdr modablist--box-range))))
 
 (defun modablist--change-data (column value)
@@ -431,23 +431,23 @@ the output."
       (overlay-put ol 'face (if (modablist--inserting-p) 'modablist-insert-face
                               'modablist-select-face))
       (overlay-put ol 'priority 100)
-      (push ol modablist--overlays)  ; NOTE: Eventually get managed to list.
+      (push ol modablist--overlay-selections)  ; NOTE: Eventually get managed to list.
       ol)))
 
 (defun modablist--clean-overlays ()
   "Remove all overlays."
-  (modablist--clear-selection-overlays)
-  (modablist--clear-end-overlay))
+  (modablist--clear-overlay-selections)
+  (modablist--clear-overlay-end))
 
-(defun modablist--clear-end-overlay ()
+(defun modablist--clear-overlay-end ()
   "Remove box end overlay."
-  (modablist--delete-overlay modablist--end-overlay)
-  (setq modablist--end-overlay nil))
+  (modablist--delete-overlay modablist--overlay-end)
+  (setq modablist--overlay-end nil))
 
-(defun modablist--clear-selection-overlays ()
+(defun modablist--clear-overlay-selections ()
   "Remove all selection overlays."
-  (dolist (ov modablist--overlays) (modablist--delete-overlay ov))
-  (setq modablist--overlays '()))
+  (dolist (ov modablist--overlay-selections) (modablist--delete-overlay ov))
+  (setq modablist--overlay-selections '()))
 
 (defun modablist--ensure-current-selection ()
   "Ensure current selection will always be displayed."
@@ -463,13 +463,13 @@ the output."
 (defun modablist--make-selection-ov ()
   "Make all selection overlays."
   (modablist-current-buffer
-    (modablist--ensure-current-selection)
-    (save-excursion
-      (if (modablist--inserting-p)
-          (modablist--make-selection-by-range (modablist--edit-box-range))
-        (dolist (box modablist--selected-box)
-          (modablist--move-to (car box) (cdr box))
-          (modablist--make-selection-by-range (modablist--current-range)))))))
+   (modablist--ensure-current-selection)
+   (save-excursion
+     (if (modablist--inserting-p)
+         (modablist--make-selection-by-range (modablist--edit-box-range))
+       (dolist (box modablist--selected-box)
+         (modablist--move-to (car box) (cdr box))
+         (modablist--make-selection-by-range (modablist--current-range)))))))
 
 (defun modablist-remove-all-selections ()
   "Remove all selections."
@@ -486,10 +486,10 @@ the output."
 (defun modablist--make-end-overlay ()
   "Make the box ending overlay.
 This is use to represet the current end position of the editing box."
-  (modablist--clear-end-overlay)
+  (modablist--clear-overlay-end)
   (let* ((end (cdr modablist--box-range)) (beg (1- end))
          (ol (make-overlay beg end)) box-beg box-width)
-    (setq modablist--end-overlay ol
+    (setq modablist--overlay-end ol
           modablist--end-column-p (= end (line-end-position))
           box-beg (car modablist--box-range)
           box-width (modablist--column-width)
@@ -553,7 +553,7 @@ This jumps between normal and insert mode."
       (run-hook-with-args 'modablist-change-data-hook (modablist--get-table-entry))
       (modablist--refresh)
       (setq modablist--box-range nil modablist--box nil)
-      (modablist--clear-end-overlay))))
+      (modablist--clear-overlay-end))))
 
 (defun modablist--new-row ()
   "Create a new row."
@@ -576,7 +576,7 @@ This jumps between normal and insert mode."
         (unless (modablist--in-range-p (point) beg end '<= '<=)
           (set-window-point nil modablist--window-point)))
     (modablist--update-column-boundary))
-  (modablist--clear-selection-overlays)
+  (modablist--clear-overlay-selections)
   (unless modablist--continue-select-p (modablist-remove-all-selections))
   (modablist--kill-timer modablist--timer-selection-overlay)
   (setq modablist--timer-selection-overlay
@@ -593,8 +593,8 @@ of box instead of current point."
       (goto-char end))
     (insert (modablist--string-chars n " "))
     (add-text-properties start (point) '(modablist--virtual-char t))
-    (when (overlayp modablist--end-overlay)
-      (move-overlay modablist--end-overlay (1- (point)) (point)))))
+    (when (overlayp modablist--overlay-end)
+      (move-overlay modablist--overlay-end (1- (point)) (point)))))
 
 (defun modablist--delete-virtual-char (n)
   "Delete N virtual space."
