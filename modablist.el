@@ -7,7 +7,7 @@
 ;; Description: Modifiable tabulated-list extension.
 ;; Keyword: table list tablist
 ;; Version: 0.1.1
-;; Package-Requires: ((emacs "24.4") (easy-tabulated-list "0.1.2"))
+;; Package-Requires: ((emacs "24.4"))
 ;; URL: https://github.com/jcs-elpa/modablist
 
 ;; This file is NOT part of GNU Emacs.
@@ -40,7 +40,7 @@
 
 (require 'subr-x)
 
-(require 'easy-tabulated-list)
+(require 'tabulated-list)
 
 (defgroup modablist nil
   "Modifiable tabulated-list extension."
@@ -559,8 +559,9 @@ This jumps between normal and insert mode."
   "Create a new row."
   (let ((cnt 0) (columns (modablist--count-columns)) new-row)
     (while (< cnt columns) (push "" new-row) (setq cnt (1+ cnt)))
-    (setq new-row (easy-tabulated-list-form-entries new-row)
-          tabulated-list-entries (append tabulated-list-entries new-row))
+    ;; TODO: Temporary set new id to 0. Maybe should use something else?
+    (setq new-row (list 0 (vconcat new-row)))
+    (push new-row tabulated-list-entries)
     (run-hook-with-args 'modablist-new-data-hook new-row)
     (modablist--refresh)))
 
