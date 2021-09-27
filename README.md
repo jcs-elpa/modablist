@@ -1,8 +1,9 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![CI](https://github.com/jcs-elpa/modablist/actions/workflows/test.yml/badge.svg)](https://github.com/jcs-elpa/modablist/actions/workflows/test.yml)
 
 # modablist
 > Modifiable tabulated-list extension.
+
+[![CI](https://github.com/jcs-elpa/modablist/actions/workflows/test.yml/badge.svg)](https://github.com/jcs-elpa/modablist/actions/workflows/test.yml)
 
 <p align="center">
   <img src="./etc/demo.gif"/>
