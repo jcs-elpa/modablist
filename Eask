@@ -1,7 +1,12 @@
-(source "melpa")
+(package "modablist"
+         "0.1.1"
+		 "Modifiable tabulated-list extension")
 
-(package "modablist" "0.1.1" "Modifiable tabulated-list extension")
+(website-url "https://github.com/jcs-elpa/modablist")
+(keywords "table" "list" "tablist")
 
 (package-file "modablist.el")
+
+(source "melpa")
 
 (depends-on "emacs" "24.4")

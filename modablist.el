@@ -4,11 +4,10 @@
 ;; Created date 2020-11-06 20:32:21
 
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
-;; Description: Modifiable tabulated-list extension.
-;; Keyword: table list tablist
+;; URL: https://github.com/jcs-elpa/modablist
 ;; Version: 0.1.1
 ;; Package-Requires: ((emacs "24.4"))
-;; URL: https://github.com/jcs-elpa/modablist
+;; Keywords: table list tablist
 
 ;; This file is NOT part of GNU Emacs.
 
