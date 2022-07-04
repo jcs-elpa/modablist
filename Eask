@@ -3,7 +3,7 @@
 		 "Modifiable tabulated-list extension")
 
 (website-url "https://github.com/jcs-elpa/modablist")
-(keywords "table" "list" "tablist")
+(keywords "convenience" "table" "list" "tablist")
 
 (package-file "modablist.el")
 
