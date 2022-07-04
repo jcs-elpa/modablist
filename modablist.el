@@ -7,7 +7,7 @@
 ;; URL: https://github.com/jcs-elpa/modablist
 ;; Version: 0.1.1
 ;; Package-Requires: ((emacs "24.4"))
-;; Keywords: table list tablist
+;; Keywords: convenience table list tablist
 
 ;; This file is NOT part of GNU Emacs.
 
