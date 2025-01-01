@@ -1,6 +1,6 @@
 ;;; modablist.el --- Modifiable tabulated-list extension  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2020-2024  Shen, Jen-Chieh
+;; Copyright (C) 2020-2025  Shen, Jen-Chieh
 ;; Created date 2020-11-06 20:32:21
 
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
