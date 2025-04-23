@@ -1,3 +1,5 @@
+;; -*- mode: eask; lexical-binding: t -*-
+
 (package "modablist"
          "0.1.1"
 		 "Modifiable tabulated-list extension")
